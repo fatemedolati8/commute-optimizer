@@ -8,8 +8,23 @@ from algorithms.base import LocalSearchSolver
 from core.state import State
 from core.problem import CommuteProblem
 from algorithms.operators import get_neighbors
+import random
+def random_state(problem: CommuteProblem) -> State:
+    net = problem.network
 
+    def dfs(node, visited):
+        if node == problem.destination:
+            return [node]
+        nbrs = [n for n in net.get_neighbors(node) if n not in visited]
+        random.shuffle(nbrs)
+        for n in nbrs:
+            res = dfs(n, visited | {n})
+            if res:
+                return [node] + res
+        return None
 
+    path = dfs(problem.origin, {problem.origin})
+    return State(tuple(path), random.choice(problem.get_valid_time_domain()))
 class HillClimbingSolver(LocalSearchSolver):
     def __init__(self, problem: CommuteProblem, **kwargs):
         super().__init__(problem, **kwargs)
@@ -19,32 +34,56 @@ class HillClimbingSolver(LocalSearchSolver):
     def solve(self) -> Tuple[State, float]:
 
         # TODO: Implement Hill Climbing with sideways moves and restarts
-        best_state, best_cost = None, float("inf")
-        for r in range(self.max_restarts + 1):
-            cur = self.problem.generate_initial_state() if r == 0 else random_state(self.problem)
-            cur_cost = self.problem.evaluate(cur)
-            sideways = 0
-            visited = {cur}
+        best_state=None
+        best_cost=float("inf")
+
+        for r in range(self.max_restarts+1):
+            if r==0:
+                curr_state=self.problem.generate_initial_state()
+            else:
+                curr_state=random_state(self.problem)
+            curr_cost=self.problem.evaluate(curr_state)
+            sideways=0
+            visited={curr_state}
             while True:
-                nbrs = get_neighbors(cur, self.problem)
-                if not nbrs:
+                neighbors=get_neighbors(curr_state,self.problem)
+                if len(neighbors)<=0:
                     break
-                scored = [(self.problem.evaluate(n), n) for n in nbrs]
-                cost, cand = min(scored, key=lambda x: x[0])
-                if cost < cur_cost - 1e-9:
-                    cur, cur_cost, sideways = cand, cost, 0
+
+                costs_nbrs={}
+                min_cost=float("inf")
+                min_state=None
+                cost_nbr={}
+                for n in neighbors:
+                    cost_nbr=self.problem.evaluate(n)
+                    if cost_nbr<min_cost:
+                        min_cost=cost_nbr
+                        min_state=n
+                    costs_nbrs[n]=cost_nbr
+
+                if min_cost<curr_cost- 1e-9:
+                    curr_cost=min_cost
+                    curr_state=min_state
+                    sideways=0
                 else:
-                    flats = [n for c, n in scored
-                             if abs(c - cur_cost) < 1e-9 and n not in visited]
-                    if flats and sideways < self.max_sideways:
-                        cur = flats[0]
-                        sideways += 1
+                    equal_costs={}
+                    for cn in costs_nbrs:
+                        if abs(costs_nbrs[cn]-curr_cost)<1e-9 and cn not in visited:
+                            equal_costs[cn]=cost_nbr[cn]
+
+                    if len(equal_costs)>0 and sideways< self.max_sideways:
+                        curr_state = next(iter(equal_costs))
+                        curr_cost = costs_nbrs[curr_state]
+                        sideways+=1
                     else:
                         break
-                visited.add(cur)
-                if cur_cost < best_cost:
-                    best_state, best_cost = cur, cur_cost
+                visited.add(curr_state)
+                if curr_cost<best_cost:
+                    best_cost=curr_cost
+                    best_state=curr_state
                 self.history.append(best_cost)
-            if cur_cost < best_cost:
-                best_state, best_cost = cur, cur_cost
-        return best_state, best_cost
+            if curr_cost<best_cost:
+                best_cost=curr_cost
+                best_state=curr_state
+        return best_state,best_cost
+
