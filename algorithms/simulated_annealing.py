@@ -8,7 +8,8 @@ from algorithms.base import LocalSearchSolver
 from core.state import State
 from core.problem import CommuteProblem
 from algorithms.operators import get_neighbors
-
+import math
+import random
 
 class SimulatedAnnealingSolver(LocalSearchSolver):
     def __init__(self, problem: CommuteProblem, **kwargs):
@@ -19,18 +20,33 @@ class SimulatedAnnealingSolver(LocalSearchSolver):
         self.max_iterations: int = self.params.get("max_iterations", 2000)
 
     def solve(self) -> Tuple[State, float]:
-        """
-        Executes Simulated Annealing optimization.
 
-        Guidelines:
-        - Start from a high temperature where worse moves are accepted with significant probability.
-        - Lower temperature over iterations according to a cooling schedule.
-        - Downhill moves (improvements) must always be accepted.
-        - Uphill moves (worse costs) should be accepted probabilistically according to temperature.
-        - Record objective values throughout the run in self.history.
-
-        Prohibited:
-        - Ignoring the temperature parameter or turning this into pure hill climbing.
-        """
         # TODO: Implement Simulated Annealing
-        raise NotImplementedError("Implement solve() in algorithms/simulated_annealing.py")
+        curr_state=self.problem.generate_initial_state()
+        curr_cost=self.problem.evaluate(curr_state)
+        best_state=curr_state
+        best_cost=curr_cost
+
+        T=self.initial_temp
+
+        for i in range(self.max_iterations):
+            if T<self.min_temp:
+                break
+            neighbors=get_neighbors(curr_state,self.problem)
+
+            if len(neighbors)<=0:
+                break
+
+            next_state=random.choice(neighbors)
+            delta_E=self.problem.evaluate(next_state)-curr_cost
+
+            if delta_E<0 or random.random()<math.exp(-delta_E/T):
+                curr_state=next_state
+                curr_cost=curr_cost+delta_E
+
+                if curr_cost<best_cost:
+                    best_cost=curr_cost
+                    best_state=curr_state
+            self.history.append(best_cost)
+            T *=self.cooling_rate
+        return best_state,best_cost
