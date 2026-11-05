@@ -69,7 +69,7 @@ class HillClimbingSolver(LocalSearchSolver):
                     equal_costs={}
                     for cn in costs_nbrs:
                         if abs(costs_nbrs[cn]-curr_cost)<1e-9 and cn not in visited:
-                            equal_costs[cn]=cost_nbr[cn]
+                            equal_costs[cn]=costs_nbrs[cn]
 
                     if len(equal_costs)>0 and sideways< self.max_sideways:
                         curr_state = next(iter(equal_costs))

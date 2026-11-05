@@ -145,26 +145,11 @@ def crossover(parent1: State, parent2: State, problem: CommuteProblem) -> State:
         if problem.is_valid_state(child_state):        
             return child_state
 
-    rep_state=State(random.choice(path_p1,path_p2),time_child)
-    neighbors_rep_state=get_neighbors(rep_state)
+    rep_state=State(random.choice([path_p1,path_p2]),time_child)
+    neighbors_rep_state=get_neighbors(rep_state,problem)
     if (len(neighbors_rep_state)>0):
         return random.choice(neighbors_rep_state)
     return rep_state
 
 
-# def random_state(problem: CommuteProblem) -> State:
-#     net = problem.network
 
-#     def dfs(node, visited):
-#         if node == problem.destination:
-#             return [node]
-#         nbrs = [n for n in net.get_neighbors(node) if n not in visited]
-#         random.shuffle(nbrs)
-#         for n in nbrs:
-#             res = dfs(n, visited | {n})
-#             if res:
-#                 return [node] + res
-#         return None
-
-#     path = dfs(problem.origin, {problem.origin})
-#     return State(tuple(path), random.choice(problem.get_valid_time_domain()))
