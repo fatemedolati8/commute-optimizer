@@ -126,38 +126,45 @@ def crossover(parent1: State, parent2: State, problem: CommuteProblem) -> State:
 
     # TODO: Implement genetic crossover
 
-    times = problem.get_valid_time_domain()
+    time_p1=parent1.departure_time
+    time_p2=parent2.departure_time
+    avg_t1_t2=(parent1.departure_time + parent2.departure_time) / 2.0
+    valid_times=problem.get_valid_time_domain()
+    time_child=min(valid_times,key=lambda t: abs(t-avg_t1_t2))
 
-    p1, p2 = parent1.path, parent2.path
-    avg = (parent1.departure_time + parent2.departure_time) / 2.0
-    child_time = min(times, key=lambda t: abs(t - avg))
+    path_p1=parent1.path
+    path_p2=parent2.path
 
-    shared = [n for n in p1[1:-1] if n in p2[1:-1]]
-    random.shuffle(shared)
-    for node in shared:
-        i, j = p1.index(node), p2.index(node)
-        child_path = p1[:i + 1] + p2[j + 1:]   
-        child = State(child_path, child_time)
-        if problem.is_valid_state(child):        
-            return child
+    points_crossover= [n for n in path_p1[1:-1] if n in path_p2[1:-1]]
+    random.shuffle(points_crossover)
+    for p in points_crossover:
+        i=path_p1.index(p)
+        j=path_p2.index(p)
+        path_child=path_p1[:i + 1] + path_p2[j + 1:]   
+        child_state = State(path_child, time_child)
+        if problem.is_valid_state(child_state):        
+            return child_state
 
-    base = State(random.choice([p1, p2]), child_time)
-    nbrs = get_neighbors(base, problem)
-    return random.choice(nbrs) if nbrs else base
+    rep_state=State(random.choice(path_p1,path_p2),time_child)
+    neighbors_rep_state=get_neighbors(rep_state)
+    if (len(neighbors_rep_state)>0):
+        return random.choice(neighbors_rep_state)
+    return rep_state
 
-def random_state(problem: CommuteProblem) -> State:
-    net = problem.network
 
-    def dfs(node, visited):
-        if node == problem.destination:
-            return [node]
-        nbrs = [n for n in net.get_neighbors(node) if n not in visited]
-        random.shuffle(nbrs)
-        for n in nbrs:
-            res = dfs(n, visited | {n})
-            if res:
-                return [node] + res
-        return None
+# def random_state(problem: CommuteProblem) -> State:
+#     net = problem.network
 
-    path = dfs(problem.origin, {problem.origin})
-    return State(tuple(path), random.choice(problem.get_valid_time_domain()))
+#     def dfs(node, visited):
+#         if node == problem.destination:
+#             return [node]
+#         nbrs = [n for n in net.get_neighbors(node) if n not in visited]
+#         random.shuffle(nbrs)
+#         for n in nbrs:
+#             res = dfs(n, visited | {n})
+#             if res:
+#                 return [node] + res
+#         return None
+
+#     path = dfs(problem.origin, {problem.origin})
+#     return State(tuple(path), random.choice(problem.get_valid_time_domain()))
